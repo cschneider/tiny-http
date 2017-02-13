@@ -17,7 +17,11 @@ Only very simple support for headers in FileHandler (Only Statusline and Content
 
 ## Build
 
+Prerequisites are Java 8 SDK and Apache Maven >= 3.2.  
+
 	mvn clean install
+
+This triggers a complete build and test run.
 
 ## Test
 
