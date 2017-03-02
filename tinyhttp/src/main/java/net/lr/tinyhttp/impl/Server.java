@@ -25,12 +25,13 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,12 +44,12 @@ import net.lr.tinyhttp.MethodNotAllowedException;
 public class Server implements Closeable, Runnable {
     private Logger log = LoggerFactory.getLogger(Server.class);
     private ServerSocket serverSocket;
-    private boolean running;
+    private AtomicBoolean running;
     private ExecutorService executor;
     private Map<String, Handler> handlers;
     
     public Server() {
-        this.handlers = new HashMap<>();
+        this.handlers = new ConcurrentHashMap<>();
     }
 
     public void start(String localip, Integer port, int numThreads) {
@@ -60,7 +61,7 @@ public class Server implements Closeable, Runnable {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        this.running = true;
+        this.running = new AtomicBoolean(true);
         this.executor = Executors.newCachedThreadPool();
         for (int c = 0; c < numThreads; c++) {
             this.executor.execute(this);
@@ -68,13 +69,13 @@ public class Server implements Closeable, Runnable {
     }
 
     public void run() {
-        while (running) {
+        while (running.get()) {
             try (Socket socket = this.serverSocket.accept();
                 InputStream in = socket.getInputStream();
                 OutputStream out = socket.getOutputStream()) {
                 handle(in, out);
             } catch (Exception e) {
-                if (running) {
+                if (running.get()) {
                     log.warn("Error handling request", e);
                 }
             }
@@ -108,7 +109,7 @@ public class Server implements Closeable, Runnable {
 
     @Override
     public void close() throws IOException {
-        this.running = false;
+        this.running.set(false);
         this.serverSocket.close();
         this.executor.shutdown();
         try {
