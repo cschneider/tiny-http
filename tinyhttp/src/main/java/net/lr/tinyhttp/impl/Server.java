@@ -21,12 +21,9 @@ package net.lr.tinyhttp.impl;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -37,43 +34,44 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.lr.tinyhttp.Handler;
-import net.lr.tinyhttp.HttpRequest;
-import net.lr.tinyhttp.HttpResponse;
-import net.lr.tinyhttp.MethodNotAllowedException;
 
 public class Server implements Closeable, Runnable {
     private Logger log = LoggerFactory.getLogger(Server.class);
+    private int keepAliveTimeOut;
     private ServerSocket serverSocket;
     private AtomicBoolean running;
     private ExecutorService executor;
     private Map<String, Handler> handlers;
-    
+
+    /**
+     * @param keepAliveTimeOut http connection will be kept open for keepAliveTimeOut seconds
+     */
     public Server() {
         this.handlers = new ConcurrentHashMap<>();
     }
 
-    public void start(String localip, Integer port, int numThreads) {
-        if (numThreads<1) {
+    public void start(String localip, Integer port, int numThreads, int keepAliveTimeOut) {
+        if (numThreads < 1) {
             throw new IllegalArgumentException("Number of threads must be > 1 but was " + numThreads);
         }
+        this.keepAliveTimeOut = keepAliveTimeOut;
         try {
             this.serverSocket = new ServerSocket(port);
+            this.serverSocket.setReuseAddress(true);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
         this.running = new AtomicBoolean(true);
-        this.executor = Executors.newCachedThreadPool();
-        for (int c = 0; c < numThreads; c++) {
-            this.executor.execute(this);
-        }
+        this.executor = Executors.newFixedThreadPool(numThreads);
+        new Thread(this).start();
     }
 
     public void run() {
         while (running.get()) {
-            try (Socket socket = this.serverSocket.accept();
-                InputStream in = socket.getInputStream();
-                OutputStream out = socket.getOutputStream()) {
-                handle(in, out);
+            try {
+                Socket socket = this.serverSocket.accept();
+                socket.setSoTimeout(keepAliveTimeOut * 1000);
+                executor.execute(new SocketWorker(socket, handlers, running));
             } catch (Exception e) {
                 if (running.get()) {
                     log.warn("Error handling request", e);
@@ -81,31 +79,15 @@ public class Server implements Closeable, Runnable {
             }
         }
     }
-    
+
     public void addHandler(String path, Handler handler) {
         this.handlers.put(path, handler);
     }
-    
+
     public void removeHandler(String path) {
         this.handlers.remove(path);
     }
 
-    private void handle(InputStream in, OutputStream out) throws IOException {
-        HttpRequest request = new HttpRequest(in);
-        HttpResponse response = new HttpResponse(request.getProtocolVersion(), out);
-        try {
-            for (Entry<String, Handler> entry : handlers.entrySet()) {
-                if (request.getPath().startsWith(entry.getKey())) {
-                    Handler handler = entry.getValue();
-                    handler.process(entry.getKey(), request, response);
-                    return;
-                }
-            }
-            response.notFound();
-        } catch (MethodNotAllowedException e) {
-            response.methodNotAllowed();
-        }
-    }
 
     @Override
     public void close() throws IOException {

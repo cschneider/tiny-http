@@ -13,8 +13,9 @@ public class DelayingHandler implements Handler {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-        response.writeStatus(HttpStatus.SC_OK, "OK");
-        response.endHeaders();
+        response.status(HttpStatus.SC_OK, "OK");
+        response.addHeader(Headers.CONTENT_LENGTH, new Long(0).toString());
+        response.writeHeaders();
 
     }
 

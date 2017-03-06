@@ -33,6 +33,12 @@ public class HttpRequest implements Closeable {
     }
 
     private void parseCommand(String line) {
+        if (line == null) {
+            this.method = "";
+            this.path = "";
+            this.protocolVersion = new ProtocolVersion("HTTP", "1.1");
+            return;
+        }
         StringTokenizer tokenizer = new StringTokenizer(line, " ");
         this.method = tokenizer.nextToken();
         String fullpath = tokenizer.nextToken();
@@ -66,8 +72,8 @@ public class HttpRequest implements Closeable {
         return arguments;
     }
 
-    public Map<String, String> getHeaders() {
-        return headers;
+    public String getHeader(String key) {
+        return this.headers.get(key);
     }
 
     @Override

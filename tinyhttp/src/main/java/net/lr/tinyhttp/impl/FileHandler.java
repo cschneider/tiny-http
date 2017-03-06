@@ -12,6 +12,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import net.lr.tinyhttp.HTTPMethod;
 import net.lr.tinyhttp.HTTPStatus;
 import net.lr.tinyhttp.Handler;
+import net.lr.tinyhttp.Headers;
 import net.lr.tinyhttp.HttpRequest;
 import net.lr.tinyhttp.HttpResponse;
 
@@ -24,6 +25,8 @@ import net.lr.tinyhttp.HttpResponse;
 @Designate(ocd = FileHandlerConfig.class)
 @Component(name = "tinyhttp.handler.file")
 public class FileHandler implements Handler {
+
+
     private File base;
     private MimeTypes mimeTypes;
 
@@ -68,13 +71,24 @@ public class FileHandler implements Handler {
                 return;
             }
         }
-        response.writeStatus(HTTPStatus.OK, "OK");
+        response.status(HTTPStatus.OK, "OK");
+        keepAlive(request, response);
         
         if (file.isFile()) {
             String mimeType = mimeTypes.get(file);
-            response.writeHeader("Content-Type", mimeType);
-            response.endHeaders();
+            response.addHeader(Headers.CONTENT_TYPE, mimeType);
+            response.addHeader(Headers.CONTENT_LENGTH, new Long(file.length()).toString());
+            response.writeHeaders();
             Files.copy(file.toPath(), response.getOutputStream());
+        } else {
+            response.addHeader(Headers.CONNECTION, Headers.VALUE_CLOSE);
+            response.writeHeaders();
+        }
+    }
+
+    private void keepAlive(HttpRequest request, HttpResponse response) throws IOException {
+        if (Headers.VALUE_KEEP_ALIVE.equals(request.getHeader(Headers.CONNECTION))) {
+            response.addHeader(Headers.CONNECTION, Headers.VALUE_KEEP_ALIVE);
         }
     }
 

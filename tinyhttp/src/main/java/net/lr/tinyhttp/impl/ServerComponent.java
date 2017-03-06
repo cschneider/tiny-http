@@ -20,6 +20,7 @@ import net.lr.tinyhttp.Handler;
     String host() default "localhost";
     int port() default 8080;
     int threads() default 10;
+    int keepAliveTimeOut() default 10;
   }
 
 @Designate(ocd = ServerConfig.class)
@@ -34,7 +35,7 @@ public class ServerComponent {
 
     @Activate
     public void activate(ServerConfig config) {
-        this.server.start(config.host(), config.port(), config.threads());
+        this.server.start(config.host(), config.port(), config.threads(), config.keepAliveTimeOut());
     }
     
     @Deactivate

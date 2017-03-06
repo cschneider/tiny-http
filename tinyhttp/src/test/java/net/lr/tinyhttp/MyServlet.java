@@ -11,13 +11,19 @@ import net.lr.tinyhttp.HTTPStatus;
 
 public class MyServlet implements Handler {
 
+    private static final Charset CHARSET = Charset.forName("utf-8");
+
     @Override
     public void process(String alias, HttpRequest request, HttpResponse response) throws IOException {
-        response.writeStatus(HTTPStatus.OK, "OK");
-        response.writeHeader("Content-Type", "text/html; charset=utf-8\n");
-        response.endHeaders();
-        BufferedWriter writer = response.getWriter(Charset.forName("utf-8"));
-        writer.write("test\n");
+        String msg = "test";
+        response.status(HTTPStatus.OK, "OK");
+        response.addHeader(Headers.CONTENT_TYPE, "text/html; charset=utf-8");
+        response.addHeader(Headers.CONTENT_LENGTH, new Long(msg.getBytes(CHARSET).length).toString());
+        response.addHeader(Headers.CONNECTION, Headers.VALUE_KEEP_ALIVE);
+        response.writeHeaders();
+        BufferedWriter writer = response.getWriter(CHARSET);
+        writer.write(msg);
+        writer.flush();
     }
 
 }

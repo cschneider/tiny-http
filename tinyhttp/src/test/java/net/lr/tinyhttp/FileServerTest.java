@@ -33,7 +33,7 @@ public class FileServerTest {
     @Before
     public void setupServer() throws IOException {
         server = new Server();
-        server.start("localhost", PORT, 10);
+        server.start("localhost", PORT, 10, 10);
         server.addHandler("", new FileHandler(new File("src/test/resources/web")));
         client = HttpClientBuilder.create().build();
     }
@@ -79,7 +79,6 @@ public class FileServerTest {
     @Test
     public void testNotFound() throws IOException, InterruptedException {
         CloseableHttpResponse response = client.execute(get("/other.html"));
-        getContent(response);
         Assert.assertEquals(HttpStatus.SC_NOT_FOUND, response.getStatusLine().getStatusCode());
     }
     
