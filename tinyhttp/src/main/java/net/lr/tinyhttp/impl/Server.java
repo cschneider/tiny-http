@@ -71,6 +71,7 @@ public class Server implements Closeable, Runnable {
             try {
                 Socket socket = this.serverSocket.accept();
                 socket.setSoTimeout(keepAliveTimeOut * 1000);
+                socket.setTcpNoDelay(true);
                 executor.execute(new SocketWorker(socket, handlers, running));
             } catch (Exception e) {
                 if (running.get()) {

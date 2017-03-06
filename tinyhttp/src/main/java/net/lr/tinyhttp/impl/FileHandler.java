@@ -72,6 +72,8 @@ public class FileHandler implements Handler {
             }
         }
         response.status(HTTPStatus.OK, "OK");
+        //response.addHeader(Headers.CONNECTION, Headers.VALUE_CLOSE);
+
         keepAlive(request, response);
         
         if (file.isFile()) {
@@ -81,7 +83,6 @@ public class FileHandler implements Handler {
             response.writeHeaders();
             Files.copy(file.toPath(), response.getOutputStream());
         } else {
-            response.addHeader(Headers.CONNECTION, Headers.VALUE_CLOSE);
             response.writeHeaders();
         }
     }

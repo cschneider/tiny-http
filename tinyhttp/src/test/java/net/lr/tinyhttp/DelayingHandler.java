@@ -2,8 +2,6 @@ package net.lr.tinyhttp;
 
 import java.io.IOException;
 
-import org.apache.http.HttpStatus;
-
 public class DelayingHandler implements Handler {
 
     @Override
@@ -13,8 +11,9 @@ public class DelayingHandler implements Handler {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-        response.status(HttpStatus.SC_OK, "OK");
+        response.status(HTTPStatus.OK, "OK");
         response.addHeader(Headers.CONTENT_LENGTH, new Long(0).toString());
+        response.addHeader(Headers.CONNECTION, Headers.VALUE_CLOSE);
         response.writeHeaders();
 
     }

@@ -18,7 +18,7 @@ import net.lr.tinyhttp.HttpResponse;
 import net.lr.tinyhttp.MethodNotAllowedException;
 
 public class SocketWorker implements Runnable {
-    private Logger log = LoggerFactory.getLogger(SocketWorker.class);
+    private static Logger log = LoggerFactory.getLogger(SocketWorker.class);
     private Socket socket;
     private Map<String, Handler> handlers;
     private AtomicBoolean running;
@@ -48,7 +48,6 @@ public class SocketWorker implements Runnable {
                         }
                         
                         out.flush();
-                        //keepAlive = false;
                     }
                 } else {
                     synchronized (in) {
@@ -58,11 +57,9 @@ public class SocketWorker implements Runnable {
             }
             socket.shutdownOutput();
             drain(in);
-            //System.out.println("closed connection");
             socket.close();
         } catch (Exception e) {
             if (running.get()) {
-                //throw new RuntimeException(e);
                 log.warn("Error handling request", e);
             }
         }

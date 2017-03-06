@@ -34,11 +34,13 @@ public class HttpResponse {
     }
     
     public void writeHeaders() throws IOException {
-        writer.write(statusLine + "\r\n");
+        StringBuilder builder = new StringBuilder();
+        builder.append(statusLine + "\r\n");
         for (String key : headers.keySet()) {
-            writer.write(key + ": " + headers.get(key) + "\r\n");
+            builder.append(key + ": " + headers.get(key) + "\r\n");
         }
-        writer.write("\r\n");
+        builder.append("\r\n");
+        writer.write(builder.toString());
         writer.flush();
     }
     
